@@ -1,6 +1,7 @@
 """cmus-web - Click CLI entry point for the FastAPI server."""
 
 import os
+from typing import Optional
 
 import click
 import uvicorn
@@ -14,7 +15,7 @@ from backend.main import app
 @click.option(
     "--socket", default=None, help="cmus socket path (overrides CMUS_SOCKET env)"
 )
-def main(host: str, port: int, socket: str | None) -> None:
+def main(host: str, port: int, socket: Optional[str]) -> None:
     """cmus-web - PWA remote control for cmus."""
 
     if socket:

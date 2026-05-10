@@ -34,6 +34,7 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["UP045"]
 
 [project.scripts]
 cmus-web = "backend.cli:main"

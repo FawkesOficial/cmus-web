@@ -1,12 +1,11 @@
 """cmus-remote subprocess wrapper with status parsing and album art extraction."""
 
-from __future__ import annotations
-
 import logging
 import os
 import subprocess
 from collections import OrderedDict
 from dataclasses import dataclass
+from typing import Optional
 
 import mutagen
 
@@ -73,7 +72,7 @@ _ART_CACHE_MAX = 100
 class CmusRemote:
     """Wraps cmus-remote CLI for status queries and command dispatch."""
 
-    def __init__(self, socket_path: str | None = None) -> None:
+    def __init__(self, socket_path: Optional[str] = None) -> None:
         if socket_path is not None:
             self.socket_path = socket_path
         elif os.environ.get("CMUS_SOCKET"):
@@ -150,7 +149,7 @@ class CmusRemote:
             repeat=data.get("repeat", "false"),
         )
 
-    def send_command(self, command: str, value: int | None = None) -> None:
+    def send_command(self, command: str, value: Optional[int] = None) -> None:
         """Send a playback command via cmus-remote flags (e.g. --play, --seek)."""
 
         flag_map = {
@@ -224,7 +223,7 @@ def _cache_put(file_path: str, art_data: tuple[bytes, str]) -> None:
     _art_cache[file_path] = art_data
 
 
-def get_album_art(file_path: str) -> tuple[bytes, str] | None:
+def get_album_art(file_path: str) -> Optional[tuple[bytes, str]]:
     """Extract embedded album art from an audio file.
 
     Returns (image_bytes, mime_type) or None if no art found.
