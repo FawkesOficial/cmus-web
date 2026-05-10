@@ -110,7 +110,9 @@ VALID_COMMANDS = {
 
 
 @app.post("/command/{action}")
-async def command_endpoint(action: str, body: Optional[dict[str, object]] = None) -> dict:
+async def command_endpoint(
+    action: str, body: Optional[dict[str, object]] = None
+) -> dict:
     """Dispatch playback commands to cmus-remote."""
 
     if action not in VALID_COMMANDS:

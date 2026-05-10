@@ -84,12 +84,31 @@ class CmusRemote:
             else:
                 self.socket_path = "/tmp/cmus-socket"
 
+    # Map of high-level action names to raw cmus commands.
+    # Adding a new simple command is as easy as adding an entry here.
+    _COMMAND_MAP: dict[str, str] = {
+        "play": "player-play",
+        "pause": "player-pause",
+        "next": "player-next",
+        "prev": "player-prev",
+        "repeat": "toggle repeat",
+    }
+
     def query_status(self) -> CmusState:
         """Query cmus status via `cmus-remote -Q` and return parsed CmusState."""
 
         result = self._run_remote(["-Q"])
 
         return self._parse_status(result.stdout)
+
+    def _send_raw_command(self, *commands: str) -> subprocess.CompletedProcess[str]:
+        """Send one or more raw commands via ``cmus-remote -C``.
+
+        Raw commands are the same as cmus command-mode commands (e.g.
+        ``player-play``, ``toggle repeat``, ``seek +5``).
+        """
+
+        return self._run_remote(["-C", *commands])
 
     def _parse_status(self, output: str) -> CmusState:
         """Parse cmus-remote -Q output into a CmusState."""
@@ -150,36 +169,33 @@ class CmusRemote:
         )
 
     def send_command(self, command: str, value: Optional[int] = None) -> None:
-        """Send a playback command via cmus-remote flags (e.g. --play, --seek)."""
+        """Send a playback command via cmus-remote raw commands (``-C``).
 
-        flag_map = {
-            "play": "--play",
-            "pause": "--pause",
-            "next": "--next",
-            "prev": "--prev",
-            "repeat": "--repeat",
-        }
+        ``command`` is a high-level action name (e.g. ``"play"``, ``"seek"``).
+        ``value`` is an optional integer parameter used by ``seek`` and ``volume``.
+        """
 
-        # Shuffle needs special handling: cmus-remote --shuffle cycles through
-        # off → tracks → albums → off. We want off ↔ tracks only, so we call
-        # --shuffle twice when currently on "tracks" to skip the "albums" state.
         if command == "shuffle":
+            # Use ``set shuffle=VALUE`` to toggle between off and tracks,
+            # avoiding the albums state that ``toggle shuffle`` would cycle
+            # through.  This is also a single call with no race condition.
             state = self.query_status()
-            cycles = 2 if state.shuffle == "tracks" else 1
-            for _ in range(cycles):
-                self._run_remote(["--shuffle"])
-            return
+            new_value = "off" if state.shuffle != "off" else "tracks"
+            self._send_raw_command(f"set shuffle={new_value}")
 
-        if command in flag_map:
-            self._run_remote([flag_map[command]])
         elif command == "seek":
             if value is None:
                 raise ValueError("seek requires a value")
-            self._run_remote(["--seek", str(value)])
+            self._send_raw_command(f"seek {value}")
+
         elif command == "volume":
             if value is None:
                 raise ValueError("volume requires a value")
-            self._run_remote(["--volume", f"{value}%"])
+            self._send_raw_command(f"vol {value}%")
+
+        elif command in self._COMMAND_MAP:
+            self._send_raw_command(self._COMMAND_MAP[command])
+
         else:
             raise ValueError(f"Unknown command: {command}")
 
@@ -187,11 +203,12 @@ class CmusRemote:
         """Run a cmus-remote command.
 
         ``args`` are the arguments *after* the ``cmus-remote`` binary.
-        ``--server <socket>`` is appended automatically.
+        ``--server <socket>`` is prepended automatically so that it is
+        parsed before any ``-C`` raw-command arguments.
         Returns the CompletedProcess so callers can access stdout.
         """
 
-        cmd = ["cmus-remote", *args, "--server", self.socket_path]
+        cmd = ["cmus-remote", "--server", self.socket_path, *args]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True)
         except FileNotFoundError:
