@@ -88,21 +88,7 @@ class CmusRemote:
     def query_status(self) -> CmusState:
         """Query cmus status via `cmus-remote -Q` and return parsed CmusState."""
 
-        cmd = ["cmus-remote", "-Q", "--server", self.socket_path]
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True)
-        except FileNotFoundError:
-            logger.error("cmus-remote binary not found")
-            raise CmusRemoteNotFound("cmus-remote binary not found") from None
-
-        if result.returncode != 0:
-            stderr = result.stderr.strip().lower()
-            if "not running" in stderr or "no such file" in stderr:
-                logger.warning("cmus is not running")
-                raise CmusNotRunning("cmus is not running")
-            logger.error("cmus-remote failed: %s", result.stderr.strip())
-            msg = f"cmus-remote error: {result.stderr.strip()}"
-            raise CmusRemoteError(msg) from None
+        result = self._run_remote(["-Q"])
 
         return self._parse_status(result.stdout)
 
@@ -182,34 +168,31 @@ class CmusRemote:
             state = self.query_status()
             cycles = 2 if state.shuffle == "tracks" else 1
             for _ in range(cycles):
-                cmd = ["cmus-remote", "--shuffle", "--server", self.socket_path]
-                self._run_remote(cmd)
+                self._run_remote(["--shuffle"])
             return
 
         if command in flag_map:
-            cmd = ["cmus-remote", flag_map[command], "--server", self.socket_path]
+            self._run_remote([flag_map[command]])
         elif command == "seek":
             if value is None:
                 raise ValueError("seek requires a value")
-            cmd = ["cmus-remote", "--seek", str(value), "--server", self.socket_path]
+            self._run_remote(["--seek", str(value)])
         elif command == "volume":
             if value is None:
                 raise ValueError("volume requires a value")
-            cmd = [
-                "cmus-remote",
-                "--volume",
-                str(value) + "%",
-                "--server",
-                self.socket_path,
-            ]
+            self._run_remote(["--volume", f"{value}%"])
         else:
             raise ValueError(f"Unknown command: {command}")
 
-        self._run_remote(cmd)
+    def _run_remote(self, args: list[str]) -> subprocess.CompletedProcess[str]:
+        """Run a cmus-remote command.
 
-    def _run_remote(self, cmd: list[str]) -> None:
-        """Run a cmus-remote command and handle errors."""
+        ``args`` are the arguments *after* the ``cmus-remote`` binary.
+        ``--server <socket>`` is appended automatically.
+        Returns the CompletedProcess so callers can access stdout.
+        """
 
+        cmd = ["cmus-remote", *args, "--server", self.socket_path]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True)
         except FileNotFoundError:
@@ -218,12 +201,14 @@ class CmusRemote:
 
         if result.returncode != 0:
             stderr = result.stderr.strip().lower()
-            if "not running" in stderr:
+            if "not running" in stderr or "no such file" in stderr:
                 logger.warning("cmus is not running")
                 raise CmusNotRunning("cmus is not running")
             logger.error("cmus-remote command failed: %s", result.stderr.strip())
             msg = f"cmus-remote error: {result.stderr.strip()}"
             raise CmusRemoteError(msg) from None
+
+        return result
 
 
 # ---------------------------------------------------------------------------
