@@ -1,0 +1,206 @@
+/* cmus-web - Alpine.js application logic */
+
+function cmusApp() {
+  return {
+    // ── State ──────────────────────────────────────────────
+    state: {
+      status: 'disconnected',
+      title: '',
+      artist: '',
+      album: '',
+      file: '',
+      position: 0,
+      duration: 0,
+      volume: 0,
+      shuffle: 'off',
+      repeat: 'false',
+    },
+    statusMessage: '',
+    connected: false,
+    seeking: false,
+    _seekPosition: 0,
+    volumeSeeking: false,
+    _volumeDisplay: 0,
+    showRemaining: false,
+    accentColor: localStorage.getItem('accentColor') || '#e74c3c',
+    accentColors: ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c', '#e91e63'],
+    _eventSource: null,
+
+    // ── Computed ───────────────────────────────────────────
+    get artUrl() {
+      return this.state.file ? '/art?t=' + encodeURIComponent(this.state.file) : '';
+    },
+
+    get trackMeta() {
+      return '';
+    },
+
+    get position() {
+      return this.seeking ? this._seekPosition : this.state.position;
+    },
+
+    get timeRight() {
+      if (this.showRemaining) {
+        return '-' + this.formatTime(this.state.duration - this.state.position);
+      }
+      return this.formatTime(this.state.duration);
+    },
+
+    get controlsDisabled() {
+      return !this.connected
+        || this.state.status === 'not_running'
+        || this.state.status === 'no_track'
+        || this.state.status === 'no_cmus';
+    },
+
+    // ── Init ──────────────────────────────────────────────
+    init() {
+      this.setAccentColor(this.accentColor);
+      this._connectSSE();
+
+      // Sync volume slider display when SSE updates arrive (only when user isn't dragging)
+      this.$watch('state.volume', (value) => {
+        if (!this.volumeSeeking) {
+          this._volumeDisplay = value;
+        }
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Ignore if user is typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        switch (e.code) {
+          case 'Space':
+            e.preventDefault();
+            this.togglePlay();
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            this._sendCommand('seek', this.state.position - 5);
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            this._sendCommand('seek', this.state.position + 5);
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            this._volumeDisplay = Math.min(100, this._volumeDisplay + 10);
+            this.setVolume(this._volumeDisplay);
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            this._volumeDisplay = Math.max(0, this._volumeDisplay - 10);
+            this.setVolume(this._volumeDisplay);
+            break;
+        }
+      });
+    },
+
+    // ── SSE connection ─────────────────────────────────────
+    _connectSSE() {
+      const self = this;
+      this._eventSource = new EventSource('/sse');
+
+      this._eventSource.addEventListener('state', function (e) {
+        const data = JSON.parse(e.data);
+        self.state.status = data.status || self.state.status;
+        self.state.title = data.title || '';
+        self.state.artist = data.artist || '';
+        self.state.album = data.album || '';
+        self.state.file = data.file || '';
+        self.state.position = data.position !== undefined ? data.position : self.state.position;
+        self.state.duration = data.duration !== undefined ? data.duration : self.state.duration;
+        self.state.volume = data.volume !== undefined ? data.volume : self.state.volume;
+        self.state.shuffle = data.shuffle !== undefined ? data.shuffle : self.state.shuffle;
+        self.state.repeat = data.repeat !== undefined ? data.repeat : self.state.repeat;
+
+        self.connected = true;
+
+        // Status-specific messages
+        if (data.status === 'not_running') {
+          self.statusMessage = '⚠ cmus is not running';
+        } else if (data.status === 'no_track') {
+          self.statusMessage = '♪ No track loaded';
+        } else if (data.status === 'no_cmus' || data.status === 'error') {
+          self.statusMessage = '⚠ cmus-remote not found';
+        } else {
+          self.statusMessage = '';
+        }
+      });
+
+      this._eventSource.onerror = function () {
+        self.connected = false;
+        self.statusMessage = '⟳ Disconnected - reconnecting...';
+      };
+    },
+
+    // ── Command methods ────────────────────────────────────
+    async _sendCommand(action, value) {
+      const url = '/command/' + action;
+      const options = { method: 'POST' };
+      if (value !== undefined && value !== null) {
+        options.headers = { 'Content-Type': 'application/json' };
+        options.body = JSON.stringify({ value: parseInt(value, 10) });
+      }
+      try {
+        await fetch(url, options);
+      } catch (err) {
+        console.error('Command failed:', action, err);
+      }
+    },
+
+    togglePlay() {
+      const action = this.state.status === 'playing' ? 'pause' : 'play';
+      this._sendCommand(action);
+    },
+
+    next() {
+      this._sendCommand('next');
+    },
+
+    prev() {
+      this._sendCommand('prev');
+    },
+
+    seek(value) {
+      this._sendCommand('seek', parseInt(value, 10));
+      this.seeking = false;
+    },
+
+    setVolume(value) {
+      this._sendCommand('volume', parseInt(value, 10));
+      this.volumeSeeking = false;
+    },
+
+    toggleShuffle() {
+      this._sendCommand('shuffle');
+    },
+
+    toggleRepeat() {
+      this._sendCommand('repeat');
+    },
+
+    toggleTimeDisplay() {
+      this.showRemaining = !this.showRemaining;
+    },
+
+    // ── Utility ────────────────────────────────────────────
+    formatTime(seconds) {
+      const s = Math.max(0, Math.floor(seconds));
+      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    },
+
+    // ── Accent color ───────────────────────────────────────
+    setAccentColor(color) {
+      this.accentColor = color;
+      localStorage.setItem('accentColor', color);
+      document.documentElement.style.setProperty('--accent', color);
+    },
+  };
+}
+
+// ── Service worker registration ──────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js');
+}

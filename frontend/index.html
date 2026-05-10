@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cmus-web</title>
+    <meta name="theme-color" content="#121212">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/static/manifest.json">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</head>
+<body>
+    <div x-data="cmusApp()" x-init="init()" :class="{ disconnected: controlsDisabled }" class="app-container">
+
+        <!-- Status bar -->
+        <div class="status-bar"
+             x-show="statusMessage"
+             :class="{
+                 'disconnected': statusMessage && statusMessage.includes('Disconnected'),
+                 'not-running': statusMessage && statusMessage.includes('not running'),
+                 'no-track': statusMessage && statusMessage.includes('No track'),
+                 'no-cmus': statusMessage && statusMessage.includes('cmus-remote not found')
+             }">
+            <span class="reconnect-spinner" x-show="!connected"></span>
+            <span x-text="statusMessage"></span>
+        </div>
+
+        <!-- Album art -->
+        <div class="album-art-container">
+            <img x-show="state.file" :src="artUrl" alt="Album art" class="album-art">
+            <div x-show="!state.file" class="art-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18V5l12-2v13"/>
+                    <circle cx="6" cy="18" r="3"/>
+                    <circle cx="18" cy="16" r="3"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Track info -->
+        <div class="track-info">
+            <h1 class="track-title" x-text="state.title || 'No track'"></h1>
+            <p class="track-artist" x-text="state.artist || 'Unknown artist'"></p>
+            <p class="track-album" x-text="state.album || 'Unknown album'"></p>
+            <p class="track-meta" x-text="trackMeta"></p>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <!-- Progress bar -->
+            <div class="progress-row">
+                <span class="time-elapsed" x-text="formatTime(state.position)"></span>
+                <input type="range"
+                       class="progress-bar"
+                       :max="state.duration"
+                       :value="position"
+                       @input="seeking = true; _seekPosition = parseInt($event.target.value)"
+                       @change="seek($event.target.value)">
+                <span class="time-right"
+                      x-text="timeRight"
+                      @click="toggleTimeDisplay()"
+                      title="Click to toggle remaining/total time"></span>
+            </div>
+
+            <!-- Playback buttons -->
+            <div class="playback-buttons">
+                <button @click="prev()" class="btn-control" :disabled="controlsDisabled" aria-label="Previous">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><polygon points="20,4 20,20 8,12"/></svg>
+                </button>
+                <button @click="togglePlay()" class="btn-play" :disabled="controlsDisabled" aria-label="Play/Pause">
+                    <span x-show="state.status === 'playing'">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    </span>
+                    <span x-show="state.status !== 'playing'">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>
+                    </span>
+                </button>
+                <button @click="next()" class="btn-control" :disabled="controlsDisabled" aria-label="Next">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="4,4 4,20 16,12"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+            </div>
+
+            <!-- Mode toggles -->
+            <div class="mode-toggles">
+                <button @click="toggleShuffle()" class="btn-mode" :class="{ active: state.shuffle === 'tracks' }" :disabled="controlsDisabled" aria-label="Toggle shuffle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16,3 21,3 21,8"/>
+                        <line x1="4" y1="20" x2="21" y2="3"/>
+                        <polyline points="21,16 21,21 16,21"/>
+                        <line x1="15" y1="15" x2="21" y2="21"/>
+                        <line x1="4" y1="4" x2="9" y2="9"/>
+                    </svg>
+                </button>
+                <button @click="toggleRepeat()" class="btn-mode" :class="{ active: state.repeat === 'true' }" :disabled="controlsDisabled" aria-label="Toggle repeat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="17,1 21,5 17,9"/>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                        <polyline points="7,23 3,19 7,15"/>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Volume -->
+            <div class="volume-row">
+                <span class="volume-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    </svg>
+                </span>
+                <input type="range"
+                       class="volume-slider"
+                       min="0"
+                       max="100"
+                       step="10"
+                       x-model="_volumeDisplay"
+                       @input="volumeSeeking = true"
+                       @change="setVolume(_volumeDisplay)">
+                <span class="volume-value" x-text="state.volume + '%'"></span>
+            </div>
+        </div>
+
+        <!-- Accent color picker -->
+        <div class="accent-picker-wrapper" x-data="{ open: false }" @click.away="open = false">
+            <button class="accent-trigger"
+                    @click="open = !open"
+                    :style="'background-color: ' + accentColor"
+                    aria-label="Change accent color">
+            </button>
+            <div class="accent-dropdown" x-show="open">
+                <div class="accent-swatches">
+                    <template x-for="color in accentColors" :key="color">
+                        <button class="accent-swatch"
+                                :class="{ active: accentColor === color }"
+                                :style="'background-color: ' + color"
+                                @click="setAccentColor(color); open = false"
+                                :aria-label="'Set accent color ' + color">
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
