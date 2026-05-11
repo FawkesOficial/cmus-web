@@ -2,10 +2,19 @@
 #
 # Usage:
 #   docker build -t cmus-web .
-#   docker run -v /run/user/1000/cmus-socket:/tmp/cmus-socket -p 8000:8000 cmus-web
+#   docker run \
+#     -v /run/user/1000/cmus-socket:/tmp/cmus-socket \
+#     -v ~/Music:/music \
+#     -e CMUS_WEB_PREFIX=/home/user/Music \
+#     -p 8000:8000 \
+#     cmus-web
 #
 # The socket volume mount is required - cmus-web communicates with cmus
 # via the Unix domain socket at the mounted path.
+#
+# The music volume mount enables album art extraction.
+# Use CMUS_WEB_PREFIX to tell cmus-web what host path to strip from
+# cmus-remote file paths so they resolve correctly inside the container.
 
 FROM python:3.13-slim AS base
 
@@ -52,10 +61,13 @@ EXPOSE 8000
 # cmus socket mount point - bind mount from host at runtime
 VOLUME /tmp/cmus-socket
 
+# Music directory mount point - bind mount from host at runtime
+VOLUME /music
+
 # Health check - verify server is responding
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"
 
 # Entry point - use the cmus-web CLI command
 ENTRYPOINT ["cmus-web"]
-CMD ["--host", "0.0.0.0", "--port", "8000"]
+CMD ["--host", "0.0.0.0", "--port", "8000", "--music-dir", "/music"]

@@ -159,7 +159,30 @@ async def art_endpoint(t: str) -> Response:
     if ".." in t:
         return Response(status_code=400)
 
-    resolved = pathlib.Path(t).resolve()
+    # Path translation for Docker/container usage
+    music_dir = os.environ.get("CMUS_WEB_MUSIC_DIR")
+    prefix = os.environ.get("CMUS_WEB_PREFIX")
+
+    if music_dir and prefix:
+        # Normalize prefix: ensure consistent trailing slash
+        normalized_prefix = prefix.rstrip("/") + "/"
+
+        # Strip host prefix and build container path
+        if t.startswith(normalized_prefix):
+            relative = t[len(normalized_prefix) :]
+        elif t.startswith(prefix):
+            relative = t[len(prefix) :]
+            if relative.startswith("/"):
+                relative = relative[1:]
+        else:
+            # Path doesn't match prefix, use as-is
+            relative = t
+
+        resolved = pathlib.Path(music_dir) / relative
+    else:
+        # No translation, use path as-is
+        resolved = pathlib.Path(t).resolve()
+
     if not resolved.is_absolute():
         return Response(status_code=400)
 
