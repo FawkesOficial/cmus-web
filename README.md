@@ -1,10 +1,10 @@
 # cmus-web
 
-[![PyPI - Version](https://img.shields.io/pypi/v/freetubedb.svg)](https://pypi.org/project/freetubedb)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/freetubedb.svg)](https://pypi.org/project/freetubedb)
+[![PyPI - Version](https://img.shields.io/pypi/v/cmus-web.svg)](https://pypi.org/project/cmus-web)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cmus-web.svg)](https://pypi.org/project/cmus-web)
 
-<!-- TODO: Replace with actual screenshot -->
-<!-- ![cmus-web screenshot](./screenshot.png) -->
+<img width="1689" height="983" alt="image" src="https://github.com/user-attachments/assets/8670e55f-43f5-4de0-a3af-0e2f4742c3ca" />
+
 
 A self-hosted PWA remote control for [cmus](https://cmus.github.io/). Control your player from any device on your network.
 
