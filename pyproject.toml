@@ -2,7 +2,20 @@
 name = "cmus-web"
 version = "0.1.1"
 description = "PWA remote control for cmus"
+readme = "README.md"
 requires-python = ">=3.13"
+license = "GPL-3.0"
+keywords = []
+authors = [
+  { name = "Mário Lourenço", email = "mario.s.lourenco@protonmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -10,6 +23,11 @@ dependencies = [
     "sse-starlette",
     "click",
 ]
+
+[project.urls]
+Documentation = "https://github.com/FawkesOficial/python-cmus-web#readme"
+Issues = "https://github.com/FawkesOficial/python-cmus-web/issues"
+Source = "https://github.com/FawkesOficial/python-cmus-web"
 
 [project.optional-dependencies]
 dev = [
