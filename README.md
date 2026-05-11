@@ -3,7 +3,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/cmus-web.svg)](https://pypi.org/project/cmus-web)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cmus-web.svg)](https://pypi.org/project/cmus-web)
 
-<img width="1689" height="983" alt="image" src="https://github.com/user-attachments/assets/8670e55f-43f5-4de0-a3af-0e2f4742c3ca" />
+<img width="1688" height="982" alt="image" src="https://github.com/user-attachments/assets/2391f8a8-c609-4c6d-ba45-01200bcb060f" />
 
 
 A self-hosted PWA remote control for [cmus](https://cmus.github.io/). Control your player from any device on your network.
