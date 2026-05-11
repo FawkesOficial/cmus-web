@@ -83,30 +83,53 @@ function cmusApp() {
       if (tag === 'TEXTAREA') return;
       if (tag === 'INPUT' && e.target.type !== 'range') return;
 
-      switch (e.code) {
-        case 'Space':
-          e.preventDefault();
-          this.togglePlay();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          this._sendCommand('seek', this.state.position - 5);
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          this._sendCommand('seek', this.state.position + 5);
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          this._volumeDisplay = Math.min(100, this._volumeDisplay + 10);
-          this.setVolume(this._volumeDisplay);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          this._volumeDisplay = Math.max(0, this._volumeDisplay - 10);
-          this.setVolume(this._volumeDisplay);
-          break;
+      let handled = true;
+
+      // Volume keys: match on e.key (actual character) to handle +, -, and numpad
+      if (e.key === '+' || e.code === 'NumpadAdd') {
+        this._volumeDisplay = Math.min(100, this._volumeDisplay + 10);
+        this.setVolume(this._volumeDisplay);
+      } else if (e.key === '-' || e.code === 'NumpadSubtract') {
+        this._volumeDisplay = Math.max(0, this._volumeDisplay - 10);
+        this.setVolume(this._volumeDisplay);
+      } else {
+        switch (e.code) {
+          case 'Space':
+          case 'KeyC':
+            this.togglePlay();
+            break;
+          case 'ArrowLeft':
+            this._sendCommand('seek', this.state.position - 5);
+            break;
+          case 'ArrowRight':
+            this._sendCommand('seek', this.state.position + 5);
+            break;
+          case 'ArrowUp':
+            this._volumeDisplay = Math.min(100, this._volumeDisplay + 10);
+            this.setVolume(this._volumeDisplay);
+            break;
+          case 'ArrowDown':
+            this._volumeDisplay = Math.max(0, this._volumeDisplay - 10);
+            this.setVolume(this._volumeDisplay);
+            break;
+          case 'KeyB':
+            this.next();
+            break;
+          case 'KeyZ':
+            this.prev();
+            break;
+          case 'KeyS':
+            this.toggleShuffle();
+            break;
+          case 'KeyR':
+            this.toggleRepeat();
+            break;
+          default:
+            handled = false;
+        }
       }
+
+      if (handled) e.preventDefault();
     },
 
     // ── SSE connection ─────────────────────────────────────
