@@ -11,18 +11,36 @@ FROM python:3.13-slim AS base
 
 WORKDIR /app
 
-# Install uv for fast dependency resolution
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install system dependencies (cmus provides cmus-remote)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends cmus && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files first (layer caching)
-COPY pyproject.toml ./
+# Copy uv binary from official image (pinned for reproducibility)
+COPY --from=ghcr.io/astral-sh/uv:0.11.11 /uv /uvx /bin/
 
-# Install dependencies
-RUN uv pip install --system --no-cache .
+# Optimizations
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV UV_NO_DEV=1
 
-# Copy application code
-COPY backend/ backend/
-COPY frontend/ frontend/
+# Install dependencies in a separate layer (cached until pyproject.toml or uv.lock change)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
+
+# Copy project source code
+COPY pyproject.toml uv.lock ./
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
+
+# Sync the project itself
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
+
+# Make virtual env binaries available on PATH
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Create non-root user for security
 RUN useradd --create-home appuser
