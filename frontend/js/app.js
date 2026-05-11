@@ -19,6 +19,7 @@ function cmusApp() {
     connected: false,
     seeking: false,
     _seekPosition: 0,
+    _progressDisplay: 0,
     volumeSeeking: false,
     _volumeDisplay: 0,
     showRemaining: false,
@@ -36,7 +37,7 @@ function cmusApp() {
     },
 
     get position() {
-      return this.seeking ? this._seekPosition : this.state.position;
+      return this.seeking ? this._seekPosition : this._progressDisplay;
     },
 
     get timeRight() {
@@ -65,36 +66,47 @@ function cmusApp() {
         }
       });
 
-      // Keyboard shortcuts
-      document.addEventListener('keydown', (e) => {
-        // Ignore if user is typing in an input
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-        switch (e.code) {
-          case 'Space':
-            e.preventDefault();
-            this.togglePlay();
-            break;
-          case 'ArrowLeft':
-            e.preventDefault();
-            this._sendCommand('seek', this.state.position - 5);
-            break;
-          case 'ArrowRight':
-            e.preventDefault();
-            this._sendCommand('seek', this.state.position + 5);
-            break;
-          case 'ArrowUp':
-            e.preventDefault();
-            this._volumeDisplay = Math.min(100, this._volumeDisplay + 10);
-            this.setVolume(this._volumeDisplay);
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            this._volumeDisplay = Math.max(0, this._volumeDisplay - 10);
-            this.setVolume(this._volumeDisplay);
-            break;
+      // Sync progress slider display when SSE updates arrive (only when user isn't dragging)
+      this.$watch('state.position', (value) => {
+        if (!this.seeking) {
+          this._progressDisplay = value;
         }
       });
+
+      // Keyboard shortcuts are handled via @keydown.window in the template
+    },
+
+    // ── Keyboard shortcuts ─────────────────────────────────
+    handleKey(e) {
+      // Ignore if user is typing in a text input
+      const tag = e.target.tagName;
+      if (tag === 'TEXTAREA') return;
+      if (tag === 'INPUT' && e.target.type !== 'range') return;
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault();
+          this.togglePlay();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          this._sendCommand('seek', this.state.position - 5);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          this._sendCommand('seek', this.state.position + 5);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          this._volumeDisplay = Math.min(100, this._volumeDisplay + 10);
+          this.setVolume(this._volumeDisplay);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          this._volumeDisplay = Math.max(0, this._volumeDisplay - 10);
+          this.setVolume(this._volumeDisplay);
+          break;
+      }
     },
 
     // ── SSE connection ─────────────────────────────────────
@@ -164,6 +176,7 @@ function cmusApp() {
     },
 
     seek(value) {
+      this._progressDisplay = this._seekPosition;
       this._sendCommand('seek', parseInt(value, 10));
       this.seeking = false;
     },

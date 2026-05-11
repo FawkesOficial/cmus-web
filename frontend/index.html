@@ -14,7 +14,7 @@
     <script src="/static/js/app.js"></script>
 </head>
 <body>
-    <div x-data="cmusApp()" x-init="init()" :class="{ disconnected: controlsDisabled }" class="app-container">
+    <div x-data="cmusApp()" x-init="init()" @keydown.window="handleKey($event)" :class="{ disconnected: controlsDisabled }" class="app-container">
 
         <!-- Status bar -->
         <div class="status-bar"
@@ -57,7 +57,7 @@
                 <input type="range"
                        class="progress-bar"
                        :max="state.duration"
-                       :value="position"
+                       x-model="_progressDisplay"
                        @input="seeking = true; _seekPosition = parseInt($event.target.value)"
                        @change="seek($event.target.value)">
                 <span class="time-right"
