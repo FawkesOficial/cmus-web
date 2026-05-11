@@ -335,6 +335,13 @@ body {
   cursor: not-allowed;
 }
 
+.mode-separator {
+  color: var(--text-muted);
+  user-select: none;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
 /* Volume */
 .volume-row {
   display: flex;

@@ -68,10 +68,10 @@
 
             <!-- Playback buttons -->
             <div class="playback-buttons">
-                <button @click="prev()" class="btn-control" :disabled="controlsDisabled" aria-label="Previous">
+                <button @click="prev()" class="btn-control" :disabled="controlsDisabled" aria-label="Previous" title="Previous track (Z)">
                     <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><polygon points="20,4 20,20 8,12"/></svg>
                 </button>
-                <button @click="togglePlay()" class="btn-play" :disabled="controlsDisabled" aria-label="Play/Pause">
+                <button @click="togglePlay()" class="btn-play" :disabled="controlsDisabled" aria-label="Play/Pause" title="Play/Pause (Space / C)">
                     <span x-show="state.status === 'playing'">
                         <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                     </span>
@@ -79,14 +79,14 @@
                         <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>
                     </span>
                 </button>
-                <button @click="next()" class="btn-control" :disabled="controlsDisabled" aria-label="Next">
+                <button @click="next()" class="btn-control" :disabled="controlsDisabled" aria-label="Next" title="Next track (B)">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="4,4 4,20 16,12"/><rect x="14" y="4" width="4" height="16"/></svg>
                 </button>
             </div>
 
             <!-- Mode toggles -->
             <div class="mode-toggles">
-                <button @click="toggleShuffle()" class="btn-mode" :class="{ active: state.shuffle === 'tracks' }" :disabled="controlsDisabled" aria-label="Toggle shuffle">
+                <button @click="toggleShuffle()" class="btn-mode" :class="{ active: state.shuffle === 'tracks' }" :disabled="controlsDisabled" aria-label="Toggle shuffle" title="Toggle shuffle (S)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="16,3 21,3 21,8"/>
                         <line x1="4" y1="20" x2="21" y2="3"/>
@@ -95,12 +95,19 @@
                         <line x1="4" y1="4" x2="9" y2="9"/>
                     </svg>
                 </button>
-                <button @click="toggleRepeat()" class="btn-mode" :class="{ active: state.repeat === 'true' }" :disabled="controlsDisabled" aria-label="Toggle repeat">
+                <button @click="toggleRepeat()" class="btn-mode" :class="{ active: state.repeat === 'true' }" :disabled="controlsDisabled" aria-label="Toggle repeat" title="Toggle repeat (R)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="17,1 21,5 17,9"/>
                         <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
                         <polyline points="7,23 3,19 7,15"/>
                         <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                    </svg>
+                </button>
+                <span class="mode-separator">|</span>
+                <button @click="searchLyrics()" class="btn-mode" :disabled="controlsDisabled" aria-label="Search lyrics online" title="Search lyrics online (L)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
                 </button>
             </div>
@@ -131,7 +138,8 @@
             <button class="accent-trigger"
                     @click="open = !open"
                     :style="'background-color: ' + accentColor"
-                    aria-label="Change accent color">
+                    aria-label="Change accent color"
+                    title="Change accent color">
             </button>
             <div class="accent-dropdown" x-show="open">
                 <div class="accent-swatches">
@@ -140,7 +148,8 @@
                                 :class="{ active: accentColor === color }"
                                 :style="'background-color: ' + color"
                                 @click="setAccentColor(color); open = false"
-                                :aria-label="'Set accent color ' + color">
+                                :aria-label="'Set accent color ' + color"
+                                :title="'Set accent color ' + color">
                         </button>
                     </template>
                 </div>

@@ -124,6 +124,9 @@ function cmusApp() {
           case 'KeyR':
             this.toggleRepeat();
             break;
+          case 'KeyL':
+            this.searchLyrics();
+            break;
           default:
             handled = false;
         }
@@ -215,6 +218,17 @@ function cmusApp() {
 
     toggleRepeat() {
       this._sendCommand('repeat');
+    },
+
+    searchLyrics() {
+      const title = this.state.title || '';
+      const artist = this.state.artist || '';
+      if (!title && !artist) return;
+      const query = [title, artist].filter(Boolean).join(' - ') + ' lyrics';
+      window.open(
+        'https://www.startpage.com/sp/search?query=' + encodeURIComponent(query),
+        '_blank'
+      );
     },
 
     toggleTimeDisplay() {
