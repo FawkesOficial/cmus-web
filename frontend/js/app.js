@@ -222,7 +222,11 @@ function cmusApp() {
 
     searchLyrics() {
       const title = this.state.title || '';
-      const artist = this.state.artist || '';
+      let artist = this.state.artist || '';
+      // Extract only the first artist to avoid cluttering the web search
+      if (artist) {
+        artist = artist.split(/, | & | feat\.? | ft\.? | x /i)[0].trim();
+      }
       if (!title && !artist) return;
       const query = [title, artist].filter(Boolean).join(' - ') + ' lyrics';
       window.open(
