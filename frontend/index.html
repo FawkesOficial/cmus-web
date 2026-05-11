@@ -43,9 +43,9 @@
 
         <!-- Track info -->
         <div class="track-info">
-            <h1 class="track-title" x-text="state.title || 'No track'"></h1>
-            <p class="track-artist" x-text="state.artist || 'Unknown artist'"></p>
-            <p class="track-album" x-text="state.album || 'Unknown album'"></p>
+            <h1 class="track-title" x-text="state.title || 'No track'" :title="state.title || 'No track'"></h1>
+            <p class="track-artist" x-text="state.artist || 'Unknown artist'" :title="state.artist || 'Unknown artist'"></p>
+            <p class="track-album" x-text="state.album || 'Unknown album'" :title="state.album || 'Unknown album'"></p>
             <p class="track-meta" x-text="trackMeta"></p>
         </div>
 
