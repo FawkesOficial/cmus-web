@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>cmus-web</title>
+    <title x-text="pageTitle">cmus-web</title>
     <meta name="theme-color" content="#121212">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
@@ -30,7 +30,12 @@
         </div>
 
         <!-- Album art -->
-        <div class="album-art-container">
+        <div class="album-art-container"
+             :class="{ 'clickable': !controlsDisabled }"
+             @click="!controlsDisabled && togglePlay()"
+             role="button"
+             aria-label="Play/Pause"
+             title="Play/Pause (Space / C)">
             <img x-show="state.file" :src="artUrl" alt="Album art" class="album-art">
             <div x-show="!state.file" class="art-placeholder">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

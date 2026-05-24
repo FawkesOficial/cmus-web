@@ -126,6 +126,20 @@ body {
   height: 4rem;
 }
 
+/* Album art click-to-play styles */
+.album-art-container.clickable {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.album-art-container.clickable:hover {
+  opacity: 0.85;
+}
+
+.album-art-container.clickable:active {
+  opacity: 0.7;
+}
+
 /* ── Track info ───────────────────────────────────────────── */
 
 .track-info {

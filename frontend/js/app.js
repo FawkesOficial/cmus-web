@@ -47,6 +47,15 @@ function cmusApp() {
       return this.formatTime(this.state.duration);
     },
 
+    get pageTitle() {
+      if (this.state.status === 'playing' || this.state.status === 'paused') {
+        const title = this.state.title || 'Unknown';
+        const artist = this.state.artist || 'Unknown';
+        return `${title} - ${artist} | cmus-web`;
+      }
+      return 'cmus-web';
+    },
+
     get controlsDisabled() {
       return !this.connected
         || this.state.status === 'not_running'
@@ -71,6 +80,17 @@ function cmusApp() {
         if (!this.seeking) {
           this._progressDisplay = value;
         }
+      });
+
+      // Update page title when state changes
+      this.$watch('state.title', () => {
+        document.title = this.pageTitle;
+      });
+      this.$watch('state.artist', () => {
+        document.title = this.pageTitle;
+      });
+      this.$watch('state.status', () => {
+        document.title = this.pageTitle;
       });
 
       // Keyboard shortcuts are handled via @keydown.window in the template
@@ -154,6 +174,9 @@ function cmusApp() {
         self.state.repeat = data.repeat !== undefined ? data.repeat : self.state.repeat;
 
         self.connected = true;
+
+        // Update document title
+        document.title = self.pageTitle;
 
         // Status-specific messages
         if (data.status === 'not_running') {
